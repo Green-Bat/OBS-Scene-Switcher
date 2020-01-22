@@ -9,18 +9,18 @@ if (JoystickNumber <= 0)
 {
     Loop 16
 	{
-        if (GetKeyState(A_Index . "JoyName") != "")
+		if (GetKeyState(A_Index . "JoyName") != "")
 		{
-            JoystickNumber := A_Index
-            break
-        }
-    }
+		    JoystickNumber := A_Index
+		    break
+		}
+	}
     
 	if (JoystickNumber <= 0 )
 	{
 		MsgBox Could not detect any joysticks!
 		ExitApp
-    }
+	}
 }
 
 SetBatchLines, 20ms
@@ -42,7 +42,7 @@ dpad := InStr(joy_info, "P", true)
 
 previousJoyX := ""
 previousJoyY := ""
-; Only create the variable if the axis/POV buttons exist is for the controller
+; Only create the variable if the axis/POV buttons exist for the controller
 if (axis_3 != 0)
 	previousJoyZ := ""
 if (axis_4 != 0)
@@ -97,7 +97,7 @@ trigger_hook: ; The subroutine that the controller buttons use to trigger the in
 	
 check_axes:
 	joyX := GetKeyState(JoystickNumber . "JoyX")
-    joyY := GetKeyState(JoystickNumber . "JoyY")
+	joyY := GetKeyState(JoystickNumber . "JoyY")
 	
 	if (axis_3 != 0) ; Only check the state if the axis exists
 	{
