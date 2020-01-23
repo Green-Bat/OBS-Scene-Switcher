@@ -63,7 +63,7 @@ ch.OnKeyDown := Func("OnGamepadUsed")
 ch.Start()
 ; A separate input hook used for intercepting all keyboard keys (excluding modifiers)
 ; it has a different MinSendLevel to avoid any overlap with the other input hook
-ih := InputHook("VE L0 I")
+ih := InputHook("VE L0 I3")
 ih.KeyOpt("{All}", "N")
 ih.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-N")
 ih.OnKeyDown := Func("OnKeyPressed")
@@ -162,7 +162,7 @@ OnGamepadUsed() ; A function that sends a keystroke to OBS when a controller but
 	ControlSend, ahk_parent, {Blind}{F12}, OBS ; 'F12' can be changed to whatever key you want
 }
 
-IsValueSimilar(var1, var2) ; A function that comapres the previous and current states of the controller axes
+IsValueSimilar(var1, var2) ; A function that compares the previous and current states of the controller axes
 {
 	return ((var1 - 7) <= var2) && ((var1 + 7) >= var2)
 }
