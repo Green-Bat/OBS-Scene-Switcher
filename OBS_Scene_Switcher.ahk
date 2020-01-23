@@ -25,7 +25,7 @@ if (JoystickNumber <= 0)
 
 SetBatchLines, 20ms
 Coordmode, Mouse, Screen
-SetTimer, check, 250 ; A subroutine that checks mouse movement and the POV buttons of the controller
+SetTimer, check, 80 ; A subroutine that checks mouse movement and the POV buttons of the controller
 SetTimer, check_axes, 50 ; A subroutine that checks the state of the various axes of the controller
 OnExit("Exit")
 
@@ -81,6 +81,8 @@ check:
 			MouseGetPos, sx, sy
 		} 
 	}
+	if (GetKeyState("LButton") or GetKeyState("RButton") or GetKeyState("MButton") or GetKeyState("XButton1") or GetKeyState("XButton2"))
+		OnKeyPressed()
 	if (dpad != 0){ ; Only check POV state if it exists
 		joy_p := GetKeyState(JoyStickNumber . "JoyPOV")
 		if(joy_p != -1 && joy_p != "")
@@ -88,7 +90,7 @@ check:
 	}
 	return
 	
-trigger_hook: ; The subroutine that the controller buttons use to trigger the input hook
+trigger_hook: ; The subroutine that the controller buttons use to trigger the 'ch' input hook
 	Critical
 	SendLevel, 2
 	SetKeyDelay, 10
