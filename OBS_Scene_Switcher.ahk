@@ -25,8 +25,8 @@ if (JoystickNumber <= 0)
 
 SetBatchLines, 20ms
 Coordmode, Mouse, Screen
-SetTimer, check, 80 ; A subroutine that checks mouse movement and the POV buttons of the controller
-SetTimer, check_axes, 50 ; A subroutine that checks the state of the various axes of the controller
+SetTimer, check, 60 ; A subroutine that checks mouse movement and the POV buttons of the controller
+SetTimer, check_axes, 90 ; A subroutine that checks the state of the various axes of the controller
 OnExit("Exit")
 
 global sx := ""
@@ -60,7 +60,6 @@ Loop, %joy_buttons% ; Turns the controller buttons into hotkeys that send the F1
 ch := InputHook("V L0 I2") ; An input hook that is used to intercept the F15 that is sent by the controller buttons
 ch.KeyOpt("{F15}","NS")
 ch.OnKeyDown := Func("OnGamepadUsed")
-ch.Start()
 ; A separate input hook used for intercepting all keyboard keys (excluding modifiers)
 ; it has a different MinSendLevel to avoid any overlap with the other input hook
 ih := InputHook("VE L0 I3")
@@ -68,6 +67,7 @@ ih.KeyOpt("{All}", "N")
 ih.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-N")
 ih.OnKeyDown := Func("OnKeyPressed")
 ih.Start()
+ch.Start()
 return
 
 check:
@@ -111,7 +111,7 @@ check_axes:
 		}
 	}
 	
-    if (axis_4 != 0)
+    	if (axis_4 != 0)
 	{
 		joyR := GetKeyState(JoystickNumber . "JoyR")
 		if (!IsValueSimilar(previousJoyR, joyR))
@@ -123,7 +123,7 @@ check_axes:
 	
 	if (axis_5 != 0)
 	{
-        joyU := GetKeyState(JoystickNumber . "JoyU")
+        	joyU := GetKeyState(JoystickNumber . "JoyU")
 		if (!IsValueSimilar(previousJoyU, joyU))
 		{
 			OnGamepadUsed()
@@ -131,17 +131,17 @@ check_axes:
 		}
 	}
 	
-    if (axis_6 != 0)
+	if (axis_6 != 0)
 	{
-       joyV := GetKeyState(JoystickNumber . "JoyV")
-	   if (!IsValueSimilar(previousJoyV, joyV))
+		joyV := GetKeyState(JoystickNumber . "JoyV")
+	   	if (!IsValueSimilar(previousJoyV, joyV))
 		{
 			OnGamepadUsed()
 			previousJoyV := joyV
 		}
 	}
     
-    if	(!IsValueSimilar(previousJoyX, joyX) || !IsValueSimilar(previousJoyY, joyY))
+	if (!IsValueSimilar(previousJoyX, joyX) || !IsValueSimilar(previousJoyY, joyY))
 		OnGamepadUsed()
 	
 	previousJoyX := joyX
