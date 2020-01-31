@@ -81,7 +81,7 @@ check:
 			MouseGetPos, sx, sy
 		} 
 	}
-	if (GetKeyState("LButton") or GetKeyState("RButton") or GetKeyState("MButton") or GetKeyState("XButton1") or GetKeyState("XButton2"))
+	if (GetKeyState("RButton") or GetKeyState("MButton") or GetKeyState("XButton1") or GetKeyState("XButton2"))
 		OnKeyPressed()
 	if (dpad != 0){ ; Only check POV state if it exists
 		joy_p := GetKeyState(JoyStickNumber . "JoyPOV")
