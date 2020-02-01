@@ -28,7 +28,7 @@ MouseGetPos, sx, sy
 joy_buttons := GetKeyState(JoystickNumber . "JoyButtons")
 joy_info := GetKeyState(JoystickNumber . "JoyInfo")
 ; Checks if a certain axis/POV buttons exist for the controller
-; axis_3 := InStr(joy_info, "Z", true)
+axis_3 := InStr(joy_info, "Z", true)
 axis_4 := InStr(joy_info, "R", true)
 axis_5 := InStr(joy_info, "U", true)
 axis_6 := InStr(joy_info, "V", true)
@@ -37,8 +37,8 @@ dpad := InStr(joy_info, "P", true)
 previousJoyX := ""
 previousJoyY := ""
 ; Only create the variable if the axis/POV buttons exist for the controller
-;if (axis_3 != 0)
-;	previousJoyZ := ""
+if (axis_3 != 0)
+	previousJoyZ := ""
 if (axis_4 != 0)
 	previousJoyR := ""
 if (axis_5 != 0)
