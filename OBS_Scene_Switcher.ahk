@@ -57,7 +57,7 @@ ch.OnKeyDown := Func("OnGamepadUsed")
 ; it has a different MinSendLevel to avoid any overlap with the other input hook
 ih := InputHook("VE L0 I3")
 ih.KeyOpt("{All}", "N")
-ih.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}{NumpadSub}", "-N")
+ih.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-N")
 ih.OnKeyDown := Func("OnKeyPressed")
 ih.Start()
 ch.Start()
@@ -123,8 +123,8 @@ check_axes:
 	}
 	
 	if (axis_6 != 0){
-       joyV := GetKeyState(JoystickNumber . "JoyV")
-	   if (!IsValueSimilar(previousJoyV, joyV)){
+		joyV := GetKeyState(JoystickNumber . "JoyV")
+		if (!IsValueSimilar(previousJoyV, joyV)){
 			OnGamepadUsed()
 			previousJoyV := joyV
 		}
