@@ -1,5 +1,5 @@
 #Warn
-#SingleInstance
+#SingleInstance, Force
 
 ; From the AHK documentation, used to auto-detect the joystick number
 JoystickNumber := 0
@@ -46,25 +46,19 @@ if (axis_5 != 0)
 if (axis_6 != 0)
 	previousJoyV := ""
 
-Loop, %joy_buttons% { ; Turns the controller buttons into hotkeys that send the F15 key with an input level of 2
-		Hotkey, %JoystickNumber%Joy%A_Index%, trigger_hook, "On I2"
+Loop, %joy_buttons% { ; Turns the controller buttons into hotkeys
+		Hotkey, % JoystickNumber "Joy" A_Index, OnGamepadUsed, On
 	}
 
-ch := InputHook("V L0 I2") ; An input hook that is used to intercept the F15 that is sent by the controller buttons
-ch.KeyOpt("{F15}","NS")
-ch.OnKeyDown := Func("OnGamepadUsed")
-; A separate input hook used for intercepting all keyboard keys (excluding modifiers)
-; it has a different MinSendLevel to avoid any overlap with the other input hook
-ih := InputHook("VE L0 I3")
+; An input hook used for intercepting all keyboard keys (excluding modifiers)
+ih := InputHook("VE L0 I")
 ih.KeyOpt("{All}", "N")
 ih.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-N")
 ih.OnKeyDown := Func("OnKeyPressed")
 ih.Start()
-ch.Start()
 return
 
 check: ; The subroutine that checks the mouse/POV buttons
-	Critical
 	MouseGetPos, cx, cy
 	if (cx != sx or cy != sy){
 		if (cx > (sx+50) or cx < (sx-50) or cy > (sy+50) or cy < (sy-50)){
@@ -83,14 +77,6 @@ check: ; The subroutine that checks the mouse/POV buttons
 		if(joy_p != -1 && joy_p != "")
 			OnGamepadUsed()
 	}
-	return
-	
-	
-trigger_hook: ; The subroutine that the controller buttons use to trigger the input hook
-	Critical
-	SendLevel 2
-	SetKeyDelay, 10
-	Send, {Blind}{F15}
 	return
 	
 	
@@ -162,7 +148,6 @@ IsValueSimilar(var1, var2){ ; A function that compares the previous and current 
 Exit(){
 	global
 	; Technically speaking the input hook starts collecting input and never stops, as there are no end keys or anything that stops input collection
-	; which means the input is never terminated, so I am unsure if these two lines are necessary, so I left them just in case.
-	ch.Stop()
+	; which means the input is never terminated, so I am unsure if this line is necessary, so I left it just in case.
 	ih.Stop()
 }
