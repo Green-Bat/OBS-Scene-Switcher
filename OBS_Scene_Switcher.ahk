@@ -46,7 +46,7 @@ if (axis_5 != 0)
 if (axis_6 != 0)
 	previousJoyV := ""
 
-Loop, %joy_buttons% { ; Turns the controller buttons into hotkeys
+Loop, % joy_buttons { ; Turns the controller buttons into hotkeys
 		Hotkey, % JoystickNumber "Joy" A_Index, OnGamepadUsed, On
 	}
 
@@ -65,11 +65,6 @@ check: ; The subroutine that checks the mouse/POV buttons
 			OnKeyPressed()
 			MouseGetPos, sx, sy
 		} 
-	}
-	
-	if (GetKeyState("RButton") or GetKeyState("MButton") 
-		or GetKeyState("XButton1") or GetKeyState("XButton2")){
-		OnKeyPressed()
 	}
 	
 	if (dpad != 0){ ; Only check POV state if it exists
@@ -123,6 +118,12 @@ check_axes:
 	previousJoyY := joyY
 	return
 
+~XButton2::
+~XButton1::
+~MButton::
+~RButton::
+OnKeyPressed()
+return
 
 OnKeyPressed(){ ; A function that sends a keystroke to OBS when a keyboard key is pressed/the mouse has moved
 	Critical
