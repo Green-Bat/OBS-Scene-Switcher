@@ -3,7 +3,6 @@
 
 ; From the AHK documentation, used to auto-detect the joystick number
 JoystickNumber := 0
-
 if (JoystickNumber <= 0){
 	Loop 16 {
 		if (GetKeyState(A_Index . "JoyName") != ""){
@@ -20,33 +19,24 @@ if (JoystickNumber <= 0){
 
 SetBatchLines, 20ms
 CoordMode, Mouse, Screen
-SetTimer, check, 60 ; A subroutine that checks mouse movement and the POV buttons of the controller
-SetTimer, check_axes, 90 ; A subroutine that checks the state of the various axes of the controller
+SetTimer, check_mouse, 60 ; A subroutine that checks mouse movement
+SetTimer, check_axes, 90 ; A subroutine that checks the state of the various axes/ POV buttons of the controller
 OnExit("Exit")
 
 MouseGetPos, sx, sy
 joy_buttons := GetKeyState(JoystickNumber . "JoyButtons")
 joy_info := GetKeyState(JoystickNumber . "JoyInfo")
-; Checks if a certain axis/POV buttons exist for the controller
-axis_3 := InStr(joy_info, "Z", true)
-axis_4 := InStr(joy_info, "R", true)
-axis_5 := InStr(joy_info, "U", true)
-axis_6 := InStr(joy_info, "V", true)
-dpad := InStr(joy_info, "P", true)
+axis_3 := InStr(joy_info, "Z", true) ; Checks if the third axis exists for the controller
+dpad := InStr(joy_info, "P", true) ; Checks if the POV buttons exist fot the controller
 
 previousJoyX := ""
 previousJoyY := ""
-; Only create the variable if the axis/POV buttons exist for the controller
-if (axis_3 != 0)
+if (axis_3 != 0){ ; Only create the variables if the axis exists for the controller
 	previousJoyZ := ""
-if (axis_4 != 0)
 	previousJoyR := ""
-if (axis_5 != 0)
-	previousJoyU := ""
-if (axis_6 != 0)
-	previousJoyV := ""
+}
 
-Loop, % joy_buttons { ; Turns the controller buttons into hotkeys
+Loop, % joy_buttons { ; Turns all the controller buttons into hotkeys
 		Hotkey, % JoystickNumber "Joy" A_Index, OnGamepadUsed, On
 	}
 
@@ -58,13 +48,43 @@ ih.OnKeyDown := Func("OnKeyPressed")
 ih.Start()
 return
 
-check: ; The subroutine that checks the mouse/POV buttons
+~XButton2::
+~XButton1::
+~MButton::
+~RButton::
+OnKeyPressed()
+return
+
+;**********************************/Timers/*******************************************************
+
+check_mouse: ; The subroutine that checks mouse movement
 	MouseGetPos, cx, cy
 	if (cx != sx or cy != sy){
 		if (cx > (sx+50) or cx < (sx-50) or cy > (sy+50) or cy < (sy-50)){
 			OnKeyPressed()
 			MouseGetPos, sx, sy
 		} 
+	}
+	return
+	
+
+check_axes:
+	joyX := GetKeyState(JoystickNumber . "JoyX")
+	joyY := GetKeyState(JoystickNumber . "JoyY")
+	if (!IsValueSimilar(previousJoyX, joyX) || !IsValueSimilar(previousJoyY, joyY)){
+		OnGamepadUsed()
+		previousJoyX := joyX
+		previousJoyY := joyY
+	}
+	
+	if (axis_3 != 0){ ; Only check the state if the axis exists
+		joyZ := GetKeyState(JoystickNumber . "JoyZ")
+		joyR := GetKeyState(JoystickNumber . "JoyR")
+		if (!IsValueSimilar(previousJoyZ, joyZ) || !IsValueSimilar(previousJoyR, joyR)){
+			OnGamepadUsed()
+			previousJoyZ := joyZ
+			previousJoyR := joyR
+		}
 	}
 	
 	if (dpad != 0){ ; Only check POV state if it exists
@@ -74,56 +94,7 @@ check: ; The subroutine that checks the mouse/POV buttons
 	}
 	return
 	
-	
-check_axes:
-	joyX := GetKeyState(JoystickNumber . "JoyX")
-	joyY := GetKeyState(JoystickNumber . "JoyY")
-	
-	if (axis_3 != 0){ ; Only check the state if the axis exists
-		joyZ := GetKeyState(JoystickNumber . "JoyZ")
-		if (!IsValueSimilar(previousJoyZ, joyZ)){
-			OnGamepadUsed()
-			previousJoyZ := joyZ
-		}
-	}
-	
-	if (axis_4 != 0){
-		joyR := GetKeyState(JoystickNumber . "JoyR")
-		if (!IsValueSimilar(previousJoyR, joyR)){
-			OnGamepadUsed()
-			previousJoyR := joyR
-		}
-	}
-	
-	if (axis_5 != 0){
-		joyU := GetKeyState(JoystickNumber . "JoyU")
-		if (!IsValueSimilar(previousJoyU, joyU)){
-			OnGamepadUsed()
-			previousJoyU := joyU
-		}
-	}
-	
-	if (axis_6 != 0){
-		joyV := GetKeyState(JoystickNumber . "JoyV")
-		if (!IsValueSimilar(previousJoyV, joyV)){
-			OnGamepadUsed()
-			previousJoyV := joyV
-		}
-	}
-	
-	if (!IsValueSimilar(previousJoyX, joyX) || !IsValueSimilar(previousJoyY, joyY))
-		OnGamepadUsed()
-	
-	previousJoyX := joyX
-	previousJoyY := joyY
-	return
-
-~XButton2::
-~XButton1::
-~MButton::
-~RButton::
-OnKeyPressed()
-return
+;**********************************/Functions/*******************************************************
 
 OnKeyPressed(){ ; A function that sends a keystroke to OBS when a keyboard key is pressed/the mouse has moved
 	Critical
