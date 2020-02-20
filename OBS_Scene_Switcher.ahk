@@ -52,6 +52,8 @@ return
 ~XButton1::
 ~MButton::
 ~RButton::
+~LButton::
+Sleep, 150
 OnKeyPressed()
 return
 
@@ -67,7 +69,6 @@ check_mouse: ; The subroutine that checks mouse movement
 	}
 	return
 	
-
 check_axes:
 	joyX := GetKeyState(JoystickNumber . "JoyX")
 	joyY := GetKeyState(JoystickNumber . "JoyY")
@@ -103,7 +104,6 @@ OnKeyPressed(){ ; A function that sends a keystroke to OBS when a keyboard key i
 	ControlSend, ahk_parent, {Blind}{F13}, OBS ; 'F13' can be changed to whatever key you want
 }
 
-
 OnGamepadUsed(){ ; A function that sends a keystroke to OBS when a controller button is pressed/an analog stick has moved
 	Critical
 	SetKeyDelay, 10
@@ -111,11 +111,9 @@ OnGamepadUsed(){ ; A function that sends a keystroke to OBS when a controller bu
 	ControlSend, ahk_parent, {Blind}{F14}, OBS ; 'F14' can be changed to whatever key you want
 }
 
-
 IsValueSimilar(var1, var2){ ; A function that compares the previous and current states of the controller axes
 	return ((var1 - 7) <= var2) && ((var1 + 7) >= var2)
 }
-
 
 Exit(){
 	global
