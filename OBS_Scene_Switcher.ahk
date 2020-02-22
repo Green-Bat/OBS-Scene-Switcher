@@ -41,7 +41,7 @@ Loop, % joy_buttons { ; Turns all the controller buttons into hotkeys
 	}
 
 ; An input hook used for intercepting all keyboard keys (excluding modifiers)
-ih := InputHook("VE L0 I")
+ih := InputHook("VME L0 I")
 ih.KeyOpt("{All}", "N")
 ih.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-N")
 ih.OnKeyDown := Func("OnKeyPressed")
@@ -121,3 +121,5 @@ Exit(){
 	; which means the input is never terminated, so I am unsure if this line is necessary, so I left it just in case.
 	ih.Stop()
 }
+; Kill-switch Shift+F4
++F4::ExitApp
