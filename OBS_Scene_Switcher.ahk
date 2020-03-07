@@ -12,7 +12,7 @@ if (JoystickNumber <= 0){
 	}
 	
 	if (JoystickNumber <= 0 ){
-		MsgBox Could not detect any joysticks!
+		MsgBox, Could not detect any joysticks!
 		ExitApp
 	}
 }
@@ -21,7 +21,6 @@ SetBatchLines, 20ms
 CoordMode, Mouse, Screen
 SetTimer, check_mouse, 60 ; A subroutine that checks mouse movement
 SetTimer, check_axes, 90 ; A subroutine that checks the state of the various axes/ POV buttons of the controller
-OnExit("Exit")
 
 MouseGetPos, sx, sy
 joy_buttons := GetKeyState(JoystickNumber . "JoyButtons")
@@ -41,7 +40,7 @@ Loop, % joy_buttons { ; Turns all the controller buttons into hotkeys
 	}
 
 ; An input hook used for intercepting all keyboard keys (excluding modifiers)
-ih := InputHook("VE L0 I")
+ih := InputHook("V L0 I")
 ih.KeyOpt("{All}", "N")
 ih.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-N")
 ih.OnKeyDown := Func("OnKeyPressed")
@@ -52,6 +51,8 @@ return
 ~XButton1::
 ~MButton::
 ~RButton::
+~LButton::
+Sleep, 150
 OnKeyPressed()
 return
 
@@ -67,7 +68,6 @@ check_mouse: ; The subroutine that checks mouse movement
 	}
 	return
 	
-
 check_axes:
 	joyX := GetKeyState(JoystickNumber . "JoyX")
 	joyY := GetKeyState(JoystickNumber . "JoyY")
@@ -103,7 +103,6 @@ OnKeyPressed(){ ; A function that sends a keystroke to OBS when a keyboard key i
 	ControlSend, ahk_parent, {Blind}{F13}, OBS ; 'F13' can be changed to whatever key you want
 }
 
-
 OnGamepadUsed(){ ; A function that sends a keystroke to OBS when a controller button is pressed/an analog stick has moved
 	Critical
 	SetKeyDelay, 10
@@ -111,15 +110,9 @@ OnGamepadUsed(){ ; A function that sends a keystroke to OBS when a controller bu
 	ControlSend, ahk_parent, {Blind}{F14}, OBS ; 'F14' can be changed to whatever key you want
 }
 
-
 IsValueSimilar(var1, var2){ ; A function that compares the previous and current states of the controller axes
 	return ((var1 - 7) <= var2) && ((var1 + 7) >= var2)
 }
 
-
-Exit(){
-	global
-	; Technically speaking the input hook starts collecting input and never stops, as there are no end keys or anything that stops input collection
-	; which means the input is never terminated, so I am unsure if this line is necessary, so I left it just in case.
-	ih.Stop()
-}
+; Kill-switch Shift+F4
++F4::ExitApp
