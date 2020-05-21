@@ -1,5 +1,16 @@
 #Include <JSON>
 
+/*
+*	OBS Scene Switcher
+*	By GreenBat
+*	Version:
+*		2.1 (Last updated 21/05/2020)
+*		https://github.com/Green-Bat/OBS-Scene-Switcher
+*	Requirements:
+*		AutoHotkey v1.1.32.00+
+*		JSON.ahk
+*/
+
 #Warn
 #NoEnv
 #SingleInstance, Force
@@ -14,9 +25,9 @@ if !(IsObject(settingsfile)){
 	ExitApp
 }
 global settings := JSON.Load(settingsfile.Read())
+	, HasStarted := false, keybdkey := controllerkey := ""
 settingsfile.Close()
 
-global HasStarted := false, keybdkey := controllerkey := ""
 OnMessage(0x44, "CenterMsgBox") ; Center any MsgBox before it appears
 
 Menu, OptionsMenu, Add, Create profile, CreateProfile
@@ -29,10 +40,10 @@ Gui, Font, s11
 Gui, Main:Add, Text, xm ym+5, Profiles
 Gui, Font
 Gui, Main:Add, DDL, xp yp+20 vprofile gchangeprofile
-for savedprofile in settings.Profiles {
+for savedprofile in settings.Profiles { ; Fill up the DDL with the saved profiles
 	GuiControl,, profile, % savedprofile
 }
-GuiControl, ChooseString, profile, % settings.LastProfile
+GuiControl, ChooseString, profile, % settings.LastProfile ; Choose whichever profile was last chosen
 Gui, Main:Add, Text, xp yp+30, Keyboard Key
 Gui, Main:Add, Edit, xp yp+20 w140 +Disabled vsavedkbd, % ChangeHkey(keybdkey := settings.Profiles[settings.LastProfile][1])
 Gui, Main:Add, Text, xp yp+30 wp, Controller Key
@@ -43,6 +54,7 @@ Gui, Main:Add, Button, xp yp+50 wp hp +Disabled vStopButton gStop, Stop
 Gui, Main:Show, W320 H175
 return
 
+; Make the mouse buttons hotkey only if the start button was pressed
 #If HasStarted
 ~XButton2::
 ~XButton1::
@@ -56,8 +68,14 @@ return
 
 ;****************************************************************** - G-LABELS - ******************************************************************
 
+;******************************************************************| - PROFILE CREATION/DELETION - |******************************************************************
+
 CreateProfile:
 	Gui, Main:+OwnDialogs
+	; Stop the scene switcher if it was started
+	if (HasStarted)
+		gosub, Stop
+
 	WinGetPos, x, y, w, h, ahk_id %MainHwnd%
 	Loop {
 		InputBox, ProfileName, Profile Creation, Enter a name for the profile,, 200, 150, x + ((w/2) - 100), y + ((h/2) - 75)
@@ -72,7 +90,6 @@ CreateProfile:
 
 	Gui, Main:+Disabled
 	Gui, HKey:New, +HwndHwnd2 +OwnerMain, Hotkey Selection
-	Gui, Font, s10
 	Gui, Font, s9
 	Gui, HKey:Add, Text, xm ym, Keyboard/mouse hotkey ( to be sent with keyboard/mouse input )
 	Gui, HKey:Add, Hotkey, xp yp+20 w110 h20 vkbdHkey
@@ -95,19 +112,20 @@ SetHKeys:
 		MsgBox, 48, Hotkey Selection, You forgot to add a hotkey for controller input
 		return
 	}
-
+	; Add the windows key if the user checked the checkbox
 	if (KWin)
 		kbdHkey := "#" . kbdHkey
 	if (CWin)
 		CtrlrHkey := "#" . CtrlrHkey
-	
+
 	keybdkey := kbdHkey
 	, controllerkey := CtrlrHkey
 	, settings.Profiles[ProfileName] := [kbdHkey, CtrlrHkey]
 	, settings.LastProfile := ProfileName
-	
+	; Update the main GUI
 	GuiControl, Main:, savedkbd, % ChangeHkey(kbdHkey)
 	GuiControl, Main:, savedctrlr, % ChangeHkey(CtrlrHkey)
+	; Empty the DDL, refill it, and choose the profile the user just created
 	GuiControl, Main:, profile, |
 	for savedprofile in settings.Profiles {
 		GuiControl, Main:, profile, % (savedprofile == ProfileName) ? ProfileName "||" : savedprofile
@@ -123,9 +141,12 @@ HKeyGuiClose:
 ;***************************************************************************************************************************************************
 
 DeleteProfile:
+	if (HasStarted)
+		gosub, Stop
 	Gui, Main:Submit, NoHide
 	settings.Profiles.Delete(profile)
 	settings.LastProfile := ""
+	; Empty the DDL and refill it
 	GuiControl,, profile, |
 	for savedprofile in settings.Profiles {
 		GuiControl,, profile, % savedprofile
@@ -175,7 +196,7 @@ Start:
 	return
 ;***************************************************************************************************************************************************
 
-Stop:
+Stop: ; Turns off all timers and hotkeys, and stops the input hook
 	GuiControl, Disable, StopButton
 	GuiControl, Enable, StartButton
 	HasStarted := false
@@ -190,29 +211,37 @@ Stop:
 ;***************************************************************************************************************************************************
 
 changeprofile:
-	if (HasStarted){
-		MsgBox, 48, OBS Scene Switcher, % "Please press the stop button before switching profiles"
-		return
-	}
+	if (HasStarted)
+		gosub, Stop
 	Gui, Main:Submit, NoHide
 	settings.LastProfile := profile
 	GuiControl,, savedkbd, % ChangeHkey(keybdkey := settings.Profiles[profile][1])
 	GuiControl,, savedctrlr, % ChangeHkey(controllerkey := settings.Profiles[profile][2])
 	return
-;***************************************************************************************************************************************************
+;******************************************************************| - HOTKEY SETTER - |******************************************************************
 
+; Used to send unusal hotkeys, for example, F13-F24
+; It'll bind whatever key the user enters to the F1 key and unbind it once the user closes the window
 HotkeySetter:
 	WinGetPos, x, y, w, h, ahk_id %MainHwnd%
-	Gui, HkeySet:New, +AlwaysOnTop +HwndHwnd3 +OwnerMain, Hotkey Setter
-	Gui, HkeySet:Add, Edit, xm ym+20 w80 vOddHkey
-	Gui, HkeySet:Add, Button, xp+120 yp wp-10 gSet, Set
-	Gui, HkeySet:Show, % "X" (x+(w/2) - 110) " Y" (y + (h/2) - 37.5) " W220 H75"
+	Gui, HkeySet:New, +AlwaysOnTop +HwndHwnd3, Hotkey Setter
+	Gui, Font, s10
+	Gui, HkeySet:Add, Text, xm ym,
+	( LTrim
+	This is used to send unusual keys (e.g. F13-F24). 
+	It will temporarily remap the F1 key to whatever key you type in.
+	)
+	Gui, HkeySet:Add, Edit, xp yp+40 w80 vOddHkey
+	Gui, HkeySet:Add, Button, xp+190 yp-2.5 wp-10 gSet, Set
+	Gui, HkeySet:Show, % "X" (x+(w/2) - 200) " Y" (y + (h/2) - 40) " W400 H80"
+	count := 0
 	return
 
 Set:
+	count++
 	Gui, HkeySet:+OwnDialogs
-	MsgBox,, Hotkey Setter, The F1 key will now be temporarily remapped to the key you just entered
-	Hotkey, F1, SendOddKey, On
+	MsgBox,, Hotkey Setter, The key you just entered will now be temporarily remapped to the F1 key
+	Hotkey, $F1, SendOddKey, On
 	return
 
 SendOddKey:
@@ -222,8 +251,11 @@ SendOddKey:
 
 HkeySetGuiClose:
 	Gui, HkeySet:+OwnDialogs
-	Hotkey, F1, SendOddKey, Off
-	MsgBox,, Hotkey Setter, The F1 key now has its normal functionality
+	if (count > 0){
+		Hotkey, F1, SendOddKey, Off
+		MsgBox,, Hotkey Setter, The F1 key now has its normal functionality
+		count := ""
+	}
 	Gui, HkeySet:Destroy
 	WinActivate, ahk_id %MainHwnd%
 	return
@@ -235,7 +267,7 @@ MainGuiClose:
 		MsgBox, 16, Savefile Replacer, 
 		( LTrim
 		ERROR: Failed to load settings file! Please make sure it's in the correct directory.
-		You can use Ctrl+Esc to force close the program, but any changes you made will not be saved.
+		You can use Shift+F4 to force close the program, but any changes you made will not be saved.
 		)
 		return
 	}
@@ -260,7 +292,7 @@ check_mouse: ; The subroutine that checks mouse movement
 check_axes:
 	joyX := GetKeyState(JoystickNumber . "JoyX")
 	, joyY := GetKeyState(JoystickNumber . "JoyY")
-	if (!IsValueSimilar(previousJoyX, joyX) || !IsValueSimilar(previousJoyY, joyY)){
+	if !(IsValueSimilar(previousJoyX, joyX) && IsValueSimilar(previousJoyY, joyY)){
 		OnInput(controllerkey)
 		previousJoyX := joyX
 		, previousJoyY := joyY
@@ -269,7 +301,7 @@ check_axes:
 	if (axis_3){
 		joyZ := GetKeyState(JoystickNumber . "JoyZ")
 		, joyR := GetKeyState(JoystickNumber . "JoyR")
-		if !(IsValueSimilar(previousJoyR, joyR)){
+		if !(IsValueSimilar(previousJoyR, joyR) && IsValueSimilar(previousJoyZ, joyZ)){
 			OnInput(controllerkey)
 			previousJoyZ := joyZ
 			, previousJoyR := joyR
@@ -278,7 +310,7 @@ check_axes:
 	; Only check POV state if it exists
 	if (dpad){
 		joy_p := GetKeyState(JoyStickNumber . "JoyPOV")
-		if(joy_p != -1 && joy_p != "")
+		if (joy_p != -1 && joy_p != "")
 			OnInput(controllerkey)
 	}
 	return
@@ -286,15 +318,17 @@ check_axes:
 
 OnInput(key){
 	Critical
-	Lastkey := StrSplit(key, ["^", "!", "+", "#"])
-	, key := StrReplace(key, Lastkey[Lastkey.MakIndex()], "")
+	Lastkey := StrSplit(key, ["^", "!", "+", "#"]) ; Split the key by modifier to get the key without any modifiers
+	, key := StrReplace(key, Lastkey[Lastkey.MakIndex()], "") ; Remove the key from the string and keep the modifiers
 	SetTitleMatchMode, 2
 	ControlSend, ahk_parent, % "{Blind}" key "{" Lastkey[Lastkey.MaxIndex()] "}", OBS ahk_class Qt5QWindowIcon
 }
 ;***************************************************************************************************************************************************
 
 CheckController(){ ; From the AHK documentation, used to auto-detect the joystick number
-	global JoystickNumber := 0
+	global static JoystickNumber := 0
+	
+	;~ if (JoysttickNumber > 0 && !InStr(GetKeyState(JoystickNumber . "JoyInfo"), "X"))
 	Loop, 16 {
 		if (GetKeyState(A_Index . "JoyName")){
 			JoystickNumber := A_Index
@@ -311,10 +345,10 @@ CheckController(){ ; From the AHK documentation, used to auto-detect the joystic
 }
 ;***************************************************************************************************************************************************
 
-ChangeHkey(RawHkey){
+ChangeHkey(RawHkey){ ; Function that changes modifier symbols into literal text for display purposes in the main GUI window
 	static Modifiers := {"^": "Ctrl + ", "!": "Alt + ", "#": "Win + ", "+": "Shift + "}
 	ChangedHkey := ""
-	, LastKey := StrSplit(RawHkey, ["^", "!", "+", "#"])
+	, LastKey := StrSplit(RawHkey, ["^", "!", "+", "#"]) ; Split the key by modifier to get the key without any modifiers
 
 	for symbol, modifier in Modifiers {
 		if (InStr(RawHkey, symbol))
