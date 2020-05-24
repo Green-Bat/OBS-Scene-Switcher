@@ -4,7 +4,7 @@
 *	OBS Scene Switcher
 *	By GreenBat
 *	Version:
-*		2.1 (Last updated 21/05/2020)
+*		2.6 (Last updated 24/05/2020)
 *		https://github.com/Green-Bat/OBS-Scene-Switcher
 *	Requirements:
 *		AutoHotkey v1.1.32.00+
@@ -26,11 +26,13 @@ if !(IsObject(settingsfile)){
 }
 global settings := JSON.Load(settingsfile.Read())
 	, HasStarted := false, keybdkey := controllerkey := ""
+	, JoystickNumber := 0
 settingsfile.Close()
 
 OnMessage(0x44, "CenterMsgBox") ; Center any MsgBox before it appears
 
 Menu, OptionsMenu, Add, Create profile, CreateProfile
+Menu, OptionsMenu, Add, Edit profile, EditProfile
 Menu, OptionsMenu, Add, Delete profile, DeleteProfile
 Menu, OptionsMenu, Add, Hotkey Setter, HotkeySetter
 Menu, MenuBar, Add, &Options, :OptionsMenu
@@ -54,7 +56,7 @@ Gui, Main:Add, Button, xp yp+50 wp hp +Disabled vStopButton gStop, Stop
 Gui, Main:Show, W320 H175
 return
 
-; Make the mouse buttons hotkey only if the start button was pressed
+; Make the mouse buttons hotkeys only if the start button was pressed
 #If HasStarted
 ~XButton2::
 ~XButton1::
@@ -92,39 +94,43 @@ CreateProfile:
 	Gui, HKey:New, +HwndHwnd2 +OwnerMain, Hotkey Selection
 	Gui, Font, s9
 	Gui, HKey:Add, Text, xm ym, Keyboard/mouse hotkey ( to be sent with keyboard/mouse input )
-	Gui, HKey:Add, Hotkey, xp yp+20 w110 h20 vkbdHkey
+	Gui, HKey:Add, Hotkey, xp yp+20 w110 h20 vkbdHkey +HwndKID
+	Gui, Hkey:Add, Edit, xp yp wp hp Hidden vAltKHkey
 	Gui, Hkey:Add, Checkbox, xp+130 yp+5 vKWin, Use Windows key
-	Gui, HKey:Add, Text, xp-130 yp+25, Controller hotkey ( to be sent with controller input )
-	Gui, HKey:Add, Hotkey, xp yp+20 w110 h20 vCtrlrHkey
+	Gui, Hkey:Add, Button, xp+115 yp-5 vTypeK gTypeHkey, Type manually
+	Gui, HKey:Add, Text, xp-245 yp+25, Controller hotkey ( to be sent with controller input )
+	Gui, HKey:Add, Hotkey, xp yp+20 w110 h20 vCtrlrHkey +HwndCID
+	Gui, Hkey:Add, Edit, xp yp wp hp Hidden vAltCHkey
 	Gui, Hkey:Add, Checkbox, xp+130 yp+5 vCWin, Use Windows key
-	Gui, HKey:Add, Button, xp+90 yp+20 wp hp+10 gSetHKeys, Submit
+	Gui, Hkey:Add, Button, xp+115 yp-5 vTypeC gTypeHkey, Type manually
+	Gui, HKey:Add, Button, xp-120 yp+30 wp hp gSetHKeys, Submit
 	Gui, HKey:Show, % "X" (x+(w/2) - 175) " Y" (y + (h/2) - 65) " W350 H130"
 	return
 
 SetHKeys:
 	Gui, HKey:+OwnDialogs
 	Gui, HKey:Submit, NoHide
-	if !(kbdHkey){
+	key1 := (kbdHkey) ? kbdHkey : AltKHkey
+	key2 := (CtrlrHkey) ? CtrlrHkey : AltCHkey
+	if !(key1){
 		MsgBox, 48, Hotkey Selection, You forgot to add a hotkey for keyboard input
 		return
 	}
-	if !(CtrlrHkey){
+	if !(key2){
 		MsgBox, 48, Hotkey Selection, You forgot to add a hotkey for controller input
 		return
 	}
 	; Add the windows key if the user checked the checkbox
 	if (KWin)
-		kbdHkey := "#" . kbdHkey
+		key1 := "#" . key1
 	if (CWin)
-		CtrlrHkey := "#" . CtrlrHkey
-
-	keybdkey := kbdHkey
-	, controllerkey := CtrlrHkey
-	, settings.Profiles[ProfileName] := [kbdHkey, CtrlrHkey]
+		key2 := "#" . key2
+	
+	settings.Profiles[ProfileName] := [keybdkey := key1, controllerkey := key2]
 	, settings.LastProfile := ProfileName
 	; Update the main GUI
-	GuiControl, Main:, savedkbd, % ChangeHkey(kbdHkey)
-	GuiControl, Main:, savedctrlr, % ChangeHkey(CtrlrHkey)
+	GuiControl, Main:, savedkbd, % ChangeHkey(key1)
+	GuiControl, Main:, savedctrlr, % ChangeHkey(key2)
 	; Empty the DDL, refill it, and choose the profile the user just created
 	GuiControl, Main:, profile, |
 	for savedprofile in settings.Profiles {
@@ -133,6 +139,48 @@ SetHKeys:
 	gosub, HkeyGuiClose
 	return
 
+TypeHkey(CtrlHwnd, GuiEvent, EventInfo, Errlvl:=""){
+	GuiControlGet, BtnV, Name, % CtrlHwnd ; Get the associated var of the button
+	GuiControlGet, BtnTxt,, % CtrlHwnd ; Get the text of the button
+	; Figure out which button was pressed using it's associated var and set the variables accordingly
+	Switch (BtnV)
+	{
+		Case "TypeK":
+			Control1 := "kbdHkey"
+			Control2 := "AltKHkey"
+			Check := "KWin"
+		Case "TypeC":
+			Control1 := "CtrlrHkey"
+			Control2 := "AltCHkey"
+			Check := "CWin"
+	}
+	; Hide and uncheck the checkbox
+	GuiControl, Hide, % Check
+	GuiControl,, % Check, 0
+	; Revert the changes if the button is pressed again
+	if (BtnTxt == "Type as Hotkey"){
+		Revert(Control1, Control2, BtnV, Check)
+		return
+	}
+	; Change the text of the button
+	GuiControl,, %BtnV%, Type as Hotkey
+	GuiControl, Hide, % Control1
+	GuiControl,, % Control1 ; Empty the hotkey control
+	GuiControl, Show, % Control2
+	GuiControl, Focus, % Control2
+	return
+}
+	
+Revert(Control1, Control2, BtnV, Check){
+	GuiControl,, %BtnV%, Type manually
+	GuiControl, Show, % Check
+	GuiControl, Show, % Control1
+	GuiControl, Hide, % Control2
+	GuiControl,, % Control2 ; Empty the edit control
+	GuiControl, Focus, % Control1
+	return
+}
+
 HKeyGuiClose:
 	Gui, HKey:Destroy
 	Gui, Main:-Disabled
@@ -140,7 +188,45 @@ HKeyGuiClose:
 	return
 ;***************************************************************************************************************************************************
 
+EditProfile:
+	Gui, Main:+OwnDialogs
+	if !(settings.LastProfile){
+		MsgBox, 48, OBS Scene Switcher, No profile is selected
+		return
+	}
+	if (HasStarted)
+		gosub, Stop
+	WinGetPos, x, y, w, h, ahk_id %MainHwnd%
+
+	Gui, Main:+Disabled
+	Gui, HKey:New, +HwndHwnd2 +OwnerMain, Hotkey Selection
+	Gui, Font, s9
+	Gui, HKey:Add, Text, xm ym, Keyboard/mouse hotkey ( to be sent with keyboard/mouse input )
+	Gui, HKey:Add, Hotkey, xp yp+20 w110 h20 vkbdHkey +HwndKID, % settings.Profiles[settings.LastProfile][1]
+	Gui, Hkey:Add, Edit, xp yp wp hp Hidden vAltKHkey
+	Gui, Hkey:Add, Checkbox, xp+130 yp+5 vKWin, Use Windows key
+	Gui, Hkey:Add, Button, xp+115 yp-5 vTypeK gTypeHkey, Type manually
+	Gui, HKey:Add, Text, xp-245 yp+25, Controller hotkey ( to be sent with controller input )
+	Gui, HKey:Add, Hotkey, xp yp+20 w110 h20 vCtrlrHkey +HwndCID, % settings.Profiles[settings.LastProfile][2]
+	Gui, Hkey:Add, Edit, xp yp wp hp Hidden vAltCHkey
+	Gui, Hkey:Add, Checkbox, xp+130 yp+5 vCWin, Use Windows key
+	Gui, Hkey:Add, Button, xp+115 yp-5 vTypeC gTypeHkey, Type manually
+	Gui, HKey:Add, Button, xp-120 yp+30 wp hp gSetHKeys, Submit
+	Gui, HKey:Show, % "X" (x+(w/2) - 175) " Y" (y + (h/2) - 65) " W350 H130"
+
+	ProfileName := settings.LastProfile
+	return
+;***************************************************************************************************************************************************
+
 DeleteProfile:
+	Gui, Main:+OwnDialogs
+	if !(settings.LastProfile){
+		MsgBox, 48, OBS Scene Switcher, No profile is selected
+		return
+	}
+	MsgBox, 52, OBS Scene Switcher, % "Are you sure you want to delete this profile: """ settings.LastProfile """"
+	IfMsgBox, No
+		return
 	if (HasStarted)
 		gosub, Stop
 	Gui, Main:Submit, NoHide
@@ -159,7 +245,10 @@ DeleteProfile:
 Start:
 	Gui, Main:Submit, NoHide
 	Gui, Main:+OwnDialogs
-	if !(profile){
+	if !(settings.Profiles.Count()){
+		gosub, CreateProfile
+		return
+	} else if !(profile){
 		MsgBox, 0, OBS SceneSwitcher, % "You forgot to choose a profile silly"
 		return
 	}
@@ -170,7 +259,6 @@ Start:
 	HasStarted := true
 	SetTimer, check_mouse, 60 ; A subroutine that checks mouse movement
 	SetTimer, check_axes, 90 ; A subroutine that checks the state of the various axes/ POV buttons of the controller
-	SetTimer, CheckController, % 60000*2 ; Function to check if the controller is still connected
 
 	MouseGetPos, sx, sy ; Get the mouse coords for later
 	joy_info := GetKeyState(JoystickNumber . "JoyInfo")
@@ -202,7 +290,6 @@ Stop: ; Turns off all timers and hotkeys, and stops the input hook
 	HasStarted := false
 	SetTimer, check_mouse, Off
 	SetTimer, check_axes, Off
-	SetTimer, CheckController, Off
 	Loop, % GetKeyState(JoystickNumber . "JoyButtons") {
 		Hotkey, % JoystickNumber "Joy" A_Index, % funcobj, Off
 	}
@@ -251,8 +338,8 @@ SendOddKey:
 
 HkeySetGuiClose:
 	Gui, HkeySet:+OwnDialogs
+	Hotkey, F1, SendOddKey, Off
 	if (count > 0){
-		Hotkey, F1, SendOddKey, Off
 		MsgBox,, Hotkey Setter, The F1 key now has its normal functionality
 		count := ""
 	}
@@ -319,16 +406,13 @@ check_axes:
 OnInput(key){
 	Critical
 	Lastkey := StrSplit(key, ["^", "!", "+", "#"]) ; Split the key by modifier to get the key without any modifiers
-	, key := StrReplace(key, Lastkey[Lastkey.MakIndex()], "") ; Remove the key from the string and keep the modifiers
+	key := StrReplace(key, Lastkey[Lastkey.MaxIndex()]) ; Remove the key from the string and keep the modifiers
 	SetTitleMatchMode, 2
 	ControlSend, ahk_parent, % "{Blind}" key "{" Lastkey[Lastkey.MaxIndex()] "}", OBS ahk_class Qt5QWindowIcon
 }
 ;***************************************************************************************************************************************************
 
 CheckController(){ ; From the AHK documentation, used to auto-detect the joystick number
-	global static JoystickNumber := 0
-	
-	;~ if (JoysttickNumber > 0 && !InStr(GetKeyState(JoystickNumber . "JoyInfo"), "X"))
 	Loop, 16 {
 		if (GetKeyState(A_Index . "JoyName")){
 			JoystickNumber := A_Index
@@ -336,9 +420,8 @@ CheckController(){ ; From the AHK documentation, used to auto-detect the joystic
 		}
 	}
 	if (JoystickNumber <= 0 ){
+		Gui, +OwnDialogs
 		MsgBox, 16, OBS Scene Switcher, % "ERROR: Could not detect any joysticks! Please connect one and try again"
-		if (HasStarted)
-			gosub, Stop
 		return false
 	}
 	return true
@@ -381,4 +464,3 @@ CenterMsgBox(P){
 
 ; Kill-switch Shift+F4
 +F4::ExitApp
-!r::Reload
