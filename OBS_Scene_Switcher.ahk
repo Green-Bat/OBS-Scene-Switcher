@@ -4,7 +4,7 @@
 *	OBS Scene Switcher
 *	By GreenBat
 *	Version:
-*		2.7 (Last updated 14/08/2020)
+*		2.7.1 (Last updated 14/08/2020)
 *		https://github.com/Green-Bat/OBS-Scene-Switcher
 *	Requirements:
 *		AutoHotkey v1.1.32.00+
@@ -55,10 +55,8 @@ Gui, Main:Add, Button, xp+170 yp-90 wp-20 h30 vStartButton gStart, Start
 Gui, Main:Add, Button, xp yp+50 wp hp +Disabled vStopButton gStop, Stop
 Gui, Main:Add, Text, xp-70 yp-80, Controller:
 Gui, Main:Add, DDL, xp+70 yp-2.5 wp+125 vnames gchangectr
-CheckController()
-if (settings.JoyName)
-	GuiControl, ChooseString, names, % settings.JoyName
 Gui, Main:Show, W380 H175
+CheckController()
 return
 
 ; Make the mouse buttons hotkeys only if the start button was pressed
@@ -445,10 +443,14 @@ CheckController(){ ; From the AHK documentation, used to auto-detect the joystic
 	}
 
 	GuiControl,, names, % name
-	GuiControlGet, firstctrl,, names
-	settings.JoyName := firstctrl
-	, JoystickNumber := settings.JoyNums[1]
-	GuiControl, Choose, names, 1
+	JoystickNumber := settings.JoyNums[1]
+	if (settings.JoyName)
+		GuiControl, ChooseString, names, % settings.JoyName
+	else {
+		GuiControl, Choose, names, 1
+		GuiControlGet, firstctrl,, names
+		settings.JoyName := firstctrl
+	}
 	return true
 }
 ;***************************************************************************************************************************************************
