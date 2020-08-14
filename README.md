@@ -26,7 +26,10 @@ This allows you to use keys that aren't on your keyboard layout as hotkeys, thin
 After choosing the the `Hotkey Setter` option from the options menu a new window will open with a text field telling you to type the key you want to use, after submitting, the **F1** key will temporarily be bound to whatever key you just typed.\
 Once you close the window the F1 key will retain its original functionality
 
-**Kill-Switch:** Shift+F4 will close the program without saving any changes.
+### Hotkeys
+
+**Kill-Switch:** Shift+F4 will close the program without saving any changes.\
+**Toggle Start/Stop:** Alt+s
 
 \*This program does not work with Streamlabs OBS.*
 
