@@ -4,7 +4,7 @@
 *	OBS Scene Switcher
 *	By GreenBat
 *	Version:
-*		2.6 (Last updated 24/05/2020)
+*		2.7 (Last updated 14/08/2020)
 *		https://github.com/Green-Bat/OBS-Scene-Switcher
 *	Requirements:
 *		AutoHotkey v1.1.32.00+
@@ -26,7 +26,7 @@ if !(IsObject(settingsfile)){
 }
 global settings := JSON.Load(settingsfile.Read())
 	, HasStarted := false, keybdkey := controllerkey := ""
-	, JoystickNumber := 0
+	, JoystickNumber := settings.JoyNum
 settingsfile.Close()
 
 OnMessage(0x44, "CenterMsgBox") ; Center any MsgBox before it appears
@@ -53,7 +53,12 @@ Gui, Main:Add, Edit, xp yp+20 wp +Disabled vsavedctrlr, % ChangeHkey(controllerk
 Gui, Font, s11
 Gui, Main:Add, Button, xp+170 yp-90 wp-20 h30 vStartButton gStart, Start
 Gui, Main:Add, Button, xp yp+50 wp hp +Disabled vStopButton gStop, Stop
-Gui, Main:Show, W320 H175
+Gui, Main:Add, Text, xp-70 yp-80, Controller:
+Gui, Main:Add, DDL, xp+70 yp-2.5 wp+125 vnames gchangectr
+CheckController()
+if (settings.JoyName)
+	GuiControl, ChooseString, names, % settings.JoyName
+Gui, Main:Show, W380 H175
 return
 
 ; Make the mouse buttons hotkeys only if the start button was pressed
@@ -105,7 +110,7 @@ CreateProfile:
 	Gui, Hkey:Add, Button, xp+115 yp-5 vTypeC gTypeHkey, Type manually
 	Gui, HKey:Add, Button, xp-120 yp+30 wp hp gSetHKeys, Submit
 	Gui, HKey:Show, % "X" (x+(w/2) - 175) " Y" (y + (h/2) - 65) " W350 H130"
-	return
+return
 
 SetHKeys:
 	Gui, HKey:+OwnDialogs
@@ -137,7 +142,7 @@ SetHKeys:
 		GuiControl, Main:, profile, % (savedprofile == ProfileName) ? ProfileName "||" : savedprofile
 	}
 	gosub, HkeyGuiClose
-	return
+return
 
 TypeHkey(CtrlHwnd, GuiEvent, EventInfo, Errlvl:=""){
 	GuiControlGet, BtnV, Name, % CtrlHwnd ; Get the associated var of the button
@@ -185,7 +190,7 @@ HKeyGuiClose:
 	Gui, HKey:Destroy
 	Gui, Main:-Disabled
 	WinActivate, ahk_id %MainHwnd%
-	return
+return
 ;***************************************************************************************************************************************************
 
 EditProfile:
@@ -252,8 +257,10 @@ Start:
 		MsgBox, 0, OBS SceneSwitcher, % "You forgot to choose a profile silly"
 		return
 	}
-	if !(CheckController())
+	GuiControlGet, controller,, names
+	if !(controller)
 		return
+
 	GuiControl, Disable, StartButton
 	GuiControl, Enable, StopButton
 	HasStarted := true
@@ -347,6 +354,16 @@ HkeySetGuiClose:
 	WinActivate, ahk_id %MainHwnd%
 	return
 ;***************************************************************************************************************************************************
+changectr:
+	GuiControlGet, newname,, names
+	settings.JoyName := newname
+
+	GuiControl, +AltSubmit, names
+	GuiControlGet, newname,, names
+	JoystickNumber := settings.JoyNums[newname]
+	GuiControl, -AltSubmit, names
+	return
+;***************************************************************************************************************************************************
 
 MainGuiClose:
 	settingsfile := FileOpen(A_ScriptDir "\settings.JSON" , "w")
@@ -413,17 +430,25 @@ OnInput(key){
 ;***************************************************************************************************************************************************
 
 CheckController(){ ; From the AHK documentation, used to auto-detect the joystick number
+	name := "", settings.JoyNums := []
 	Loop, 16 {
 		if (GetKeyState(A_Index . "JoyName")){
-			JoystickNumber := A_Index
-			break
+			name .= GetKeyState(A_Index . "JoyName") "|"
+			settings.JoyNums.Push(A_Index)
 		}
 	}
-	if (JoystickNumber <= 0 ){
+
+	if !(name){
 		Gui, +OwnDialogs
 		MsgBox, 16, OBS Scene Switcher, % "ERROR: Could not detect any joysticks! Please connect one and try again"
 		return false
 	}
+
+	GuiControl,, names, % name
+	GuiControlGet, firstctrl,, names
+	settings.JoyName := firstctrl
+	, JoystickNumber := settings.JoyNums[1]
+	GuiControl, Choose, names, 1
 	return true
 }
 ;***************************************************************************************************************************************************
@@ -461,6 +486,16 @@ CenterMsgBox(P){
 	}
 	DetectHiddenWindows, Off
 }
+;***************************************************************************************************************************************************
 
+ToggleStart(){
+	static toggle := true
+	Gui, Main:Default
+	gosub, % (toggle := !toggle) ? "Stop" : "Start"
+}
+
+; Toggle start/stop
+!s::ToggleStart()
+;~ !r::Reload
 ; Kill-switch Shift+F4
 +F4::ExitApp
