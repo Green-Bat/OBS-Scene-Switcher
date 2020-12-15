@@ -1,17 +1,17 @@
 #Include <JSON>
+#Include <XInput>
 
 /*
 *	OBS Scene Switcher
 *	By GreenBat
 *	Version:
-*		2.7.1 (Last updated 14/08/2020)
+*		2.7.3 (Last updated 15/12/2020)
 *		https://github.com/Green-Bat/OBS-Scene-Switcher
 *	Requirements:
 *		AutoHotkey v1.1.32.00+
 *		JSON.ahk
 */
 
-#Warn
 #NoEnv
 #SingleInstance, Force
 ListLines, Off
@@ -28,6 +28,9 @@ global settings := JSON.Load(settingsfile.Read())
 	, HasStarted := false, keybdkey := controllerkey := ""
 	, JoystickNumber := settings.JoyNum
 settingsfile.Close()
+
+GroupAdd, obs, OBS ahk_exe obs32.exe
+GroupAdd, obs, OBS ahk_exe obs64.exe
 
 OnMessage(0x44, "CenterMsgBox") ; Center any MsgBox before it appears
 
@@ -57,6 +60,7 @@ Gui, Main:Add, Text, xp-70 yp-80, Controller:
 Gui, Main:Add, DDL, xp+70 yp-2.5 wp+125 vnames gchangectr
 Gui, Main:Show, W380 H175
 CheckController()
+SetTimer, UpdateController, 3000
 return
 
 ; Make the mouse buttons hotkeys only if the start button was pressed
@@ -357,8 +361,12 @@ changectr:
 	settings.JoyName := newname
 
 	GuiControl, +AltSubmit, names
-	GuiControlGet, newname,, names
-	JoystickNumber := settings.JoyNums[newname]
+	GuiControlGet, newnum,, names
+	if !(GetKeyState(settings.JoyNums[newnum] . "JoyName")){
+		CheckController()
+		return
+	}
+	JoystickNumber := settings.JoyNums[newnum]
 	GuiControl, -AltSubmit, names
 	return
 ;***************************************************************************************************************************************************
@@ -423,7 +431,7 @@ OnInput(key){
 	Lastkey := StrSplit(key, ["^", "!", "+", "#"]) ; Split the key by modifier to get the key without any modifiers
 	key := StrReplace(key, Lastkey[Lastkey.MaxIndex()]) ; Remove the key from the string and keep the modifiers
 	SetTitleMatchMode, 2
-	ControlSend, ahk_parent, % "{Blind}" key "{" Lastkey[Lastkey.MaxIndex()] "}", OBS ahk_class Qt5QWindowIcon
+	ControlSend, ahk_parent, % "{Blind}" key "{" Lastkey[Lastkey.MaxIndex()] "}", OBS ahk_group obs
 }
 ;***************************************************************************************************************************************************
 
@@ -452,6 +460,42 @@ CheckController(){ ; From the AHK documentation, used to auto-detect the joystic
 		settings.JoyName := firstctrl
 	}
 	return true
+}
+
+UpdateController(){
+	Gui, Main:Default
+	name := "", current := [] ; current controllers recognized by the pc itself not the ones in the list
+	Loop, 16 {
+		controller := GetKeyState(A_Index . "JoyName")
+		if (controller){
+			name .= controller "|"
+			current.Push(A_Index)
+		}
+	}
+
+	if (current.Length() != settings.JoyNums.Length()){
+		gosub, update
+		return
+	}
+
+	for k, v in settings.JoyNums {
+		if (v != current[k]){
+			gosub, update
+			break
+		}
+	}
+	return
+
+	update:
+		GuiControl,, names, % "|" name
+		JoystickNumber := current[1]
+		for k, v in current {
+			settings.JoyNums[k] := v
+		}
+		GuiControl, Choose, names, 1
+		GuiControlGet, firstctrl,, names
+		settings.JoyName := firstctrl
+		return
 }
 ;***************************************************************************************************************************************************
 
