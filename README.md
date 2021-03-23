@@ -31,6 +31,6 @@ Once you close the window the F1 key will retain its original functionality
 **Kill-Switch:** Shift+F4 will close the program without saving any changes.\
 **Toggle Start/Stop:** Alt+s
 
-\*This program does not work with Streamlabs OBS.*
+\*This program does not work with Streamlabs OBS or XBOX ONE controllers.*
 
 Original idea for this was by ShikenNuggets
