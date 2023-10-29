@@ -1,0 +1,10 @@
+
+*.png
+*.zip
+*.ico
+**/*.md
+*.json
+*.exe
+*.spec
+*.txt
+.vscode

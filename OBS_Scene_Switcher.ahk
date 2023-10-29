@@ -1,11 +1,10 @@
-#Include <JSON>
-#Include <XInput>
+﻿#Include <JSON>
 
 /*
 *	OBS Scene Switcher
 *	By GreenBat
 *	Version:
-*		2.7.3 (Last updated 15/12/2020)
+*		2.7.4 (Last updated 30/10/2023)
 *		https://github.com/Green-Bat/OBS-Scene-Switcher
 *	Requirements:
 *		AutoHotkey v1.1.32.00+
@@ -59,7 +58,8 @@ Gui, Main:Add, Button, xp yp+50 wp hp +Disabled vStopButton gStop, Stop
 Gui, Main:Add, Text, xp-70 yp-80, Controller:
 Gui, Main:Add, DDL, xp+70 yp-2.5 wp+125 vnames gchangectr
 Gui, Main:Show, W380 H175
-CheckController()
+if !(CheckController())
+	ExitApp
 SetTimer, UpdateController, 3000
 return
 
@@ -112,6 +112,7 @@ CreateProfile:
 	Gui, Hkey:Add, Button, xp+115 yp-5 vTypeC gTypeHkey, Type manually
 	Gui, HKey:Add, Button, xp-120 yp+30 wp hp gSetHKeys, Submit
 	Gui, HKey:Show, % "X" (x+(w/2) - 175) " Y" (y + (h/2) - 65) " W350 H130"
+	Save()
 return
 
 SetHKeys:
@@ -222,6 +223,7 @@ EditProfile:
 	Gui, HKey:Show, % "X" (x+(w/2) - 175) " Y" (y + (h/2) - 65) " W350 H130"
 
 	ProfileName := settings.LastProfile
+	Save()
 	return
 ;***************************************************************************************************************************************************
 
@@ -246,6 +248,7 @@ DeleteProfile:
 	}
 	GuiControl,, savedkbd, % ""
 	GuiControl,, savedctrlr, % ""
+	Save()
 	return
 ;***************************************************************************************************************************************************
 
@@ -313,6 +316,7 @@ changeprofile:
 	settings.LastProfile := profile
 	GuiControl,, savedkbd, % ChangeHkey(keybdkey := settings.Profiles[profile][1])
 	GuiControl,, savedctrlr, % ChangeHkey(controllerkey := settings.Profiles[profile][2])
+	Save()
 	return
 ;******************************************************************| - HOTKEY SETTER - |******************************************************************
 
@@ -356,6 +360,7 @@ HkeySetGuiClose:
 	WinActivate, ahk_id %MainHwnd%
 	return
 ;***************************************************************************************************************************************************
+
 changectr:
 	GuiControlGet, newname,, names
 	settings.JoyName := newname
@@ -368,24 +373,8 @@ changectr:
 	}
 	JoystickNumber := settings.JoyNums[newnum]
 	GuiControl, -AltSubmit, names
+	Save()
 	return
-;***************************************************************************************************************************************************
-
-MainGuiClose:
-	settingsfile := FileOpen(A_ScriptDir "\settings.JSON" , "w")
-	if !(IsObject(settingsfile)){
-		MsgBox, 16, Savefile Replacer, 
-		( LTrim
-		ERROR: Failed to load settings file! Please make sure it's in the correct directory.
-		You can use Shift+F4 to force close the program, but any changes you made will not be saved.
-		)
-		return
-	}
-	settingsfile.Seek(0)
-	settingsfile.Write((JSON.Dump(settings,, 4)))
-	settingsfile.Close()
-	ExitApp
-
 ;****************************************************************** - TIMERS - ******************************************************************
 
 check_mouse: ; The subroutine that checks mouse movement
@@ -539,6 +528,28 @@ ToggleStart(){
 	Gui, Main:Default
 	gosub, % (toggle := !toggle) ? "Stop" : "Start"
 }
+;***************************************************************************************************************************************************
+
+Save(){
+	global settingsfile
+	settingsfile := FileOpen(A_ScriptDir "\settings.JSON" , "w")
+	if !(IsObject(settingsfile)){
+		MsgBox, 16, Savefile Replacer, 
+		( LTrim
+		ERROR: Failed to load settings file! Please make sure it's in the correct directory.
+		You can use Shift+F4 to force close the program, but any changes you made will not be saved.
+		)
+		return
+	}
+	settingsfile.Seek(0)
+	settingsfile.Write((JSON.Dump(settings,, 4)))
+	settingsfile.Close()
+}
+;***************************************************************************************************************************************************
+
+MainGuiClose:
+	Save()
+	ExitApp
 
 ; Toggle start/stop
 !s::ToggleStart()
