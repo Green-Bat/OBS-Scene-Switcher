@@ -11,6 +11,11 @@
 *		JSON.ahk
 */
 
+/*
+-[] Fix settings bug
+-[x] Add version in UI
+*/
+
 #NoEnv
 #SingleInstance, Force
 ListLines, Off
@@ -26,6 +31,7 @@ if !(IsObject(settingsfile)){
 global settings := JSON.Load(settingsfile.Read())
 	, HasStarted := false, keybdkey := controllerkey := ""
 	, JoystickNumber := settings.JoyNum
+	, VERSION = "2.7.5"
 settingsfile.Close()
 
 GroupAdd, obs, OBS ahk_exe obs32.exe
@@ -37,6 +43,7 @@ Menu, OptionsMenu, Add, Create profile, CreateProfile
 Menu, OptionsMenu, Add, Edit profile, EditProfile
 Menu, OptionsMenu, Add, Delete profile, DeleteProfile
 Menu, OptionsMenu, Add, Hotkey Setter, HotkeySetter
+Menu, OptionsMenu, Add, Info, AppInfo
 Menu, MenuBar, Add, &Options, :OptionsMenu
 Gui, Main:New, +HwndMainHwnd, OBS Scene Switcher
 Gui, Main:Menu, MenuBar
@@ -58,20 +65,19 @@ Gui, Main:Add, Button, xp yp+50 wp hp +Disabled vStopButton gStop, Stop
 Gui, Main:Add, Text, xp-70 yp-80, Controller:
 Gui, Main:Add, DDL, xp+70 yp-2.5 wp+125 vnames gchangectr
 Gui, Main:Show, W380 H175
-if !(CheckController())
-	ExitApp
+CheckController()
 SetTimer, UpdateController, 3000
 return
 
 ; Make the mouse buttons hotkeys only if the start button was pressed
 #If HasStarted
-~XButton2::
-~XButton1::
-~MButton::
-~RButton::
-~LButton::
-	Sleep, 150
-	OnInput(keybdkey)
+	~XButton2::
+	~XButton1::
+	~MButton::
+	~RButton::
+	~LButton::
+		Sleep, 150
+		OnInput(keybdkey)
 	return
 #If
 
@@ -133,9 +139,9 @@ SetHKeys:
 		key1 := "#" . key1
 	if (CWin)
 		key2 := "#" . key2
-	
+
 	settings.Profiles[ProfileName] := [keybdkey := key1, controllerkey := key2]
-	, settings.LastProfile := ProfileName
+		, settings.LastProfile := ProfileName
 	; Update the main GUI
 	GuiControl, Main:, savedkbd, % ChangeHkey(key1)
 	GuiControl, Main:, savedctrlr, % ChangeHkey(key2)
@@ -153,14 +159,14 @@ TypeHkey(CtrlHwnd, GuiEvent, EventInfo, Errlvl:=""){
 	; Figure out which button was pressed using it's associated var and set the variables accordingly
 	Switch (BtnV)
 	{
-		Case "TypeK":
-			Control1 := "kbdHkey"
-			Control2 := "AltKHkey"
-			Check := "KWin"
-		Case "TypeC":
-			Control1 := "CtrlrHkey"
-			Control2 := "AltCHkey"
-			Check := "CWin"
+	Case "TypeK":
+		Control1 := "kbdHkey"
+		Control2 := "AltKHkey"
+		Check := "KWin"
+	Case "TypeC":
+		Control1 := "CtrlrHkey"
+		Control2 := "AltCHkey"
+		Check := "CWin"
 	}
 	; Hide and uncheck the checkbox
 	GuiControl, Hide, % Check
@@ -178,7 +184,7 @@ TypeHkey(CtrlHwnd, GuiEvent, EventInfo, Errlvl:=""){
 	GuiControl, Focus, % Control2
 	return
 }
-	
+
 Revert(Control1, Control2, BtnV, Check){
 	GuiControl,, %BtnV%, Type manually
 	GuiControl, Show, % Check
@@ -224,7 +230,7 @@ EditProfile:
 
 	ProfileName := settings.LastProfile
 	Save()
-	return
+return
 ;***************************************************************************************************************************************************
 
 DeleteProfile:
@@ -249,7 +255,12 @@ DeleteProfile:
 	GuiControl,, savedkbd, % ""
 	GuiControl,, savedctrlr, % ""
 	Save()
-	return
+return
+;***************************************************************************************************************************************************
+
+AppInfo:
+	MsgBox, 64, App Information, % "App version: " VERSION
+Return
 ;***************************************************************************************************************************************************
 
 Start:
@@ -274,9 +285,9 @@ Start:
 
 	MouseGetPos, sx, sy ; Get the mouse coords for later
 	joy_info := GetKeyState(JoystickNumber . "JoyInfo")
-	, axis_3 := InStr(joy_info, "Z", true) ; Checks if the third axis exists for the controller
-	, dpad := InStr(joy_info, "P", true) ; Checks if the POV buttons exist fot the controller
-	, previousJoyX := previousJoyY := ""
+		, axis_3 := InStr(joy_info, "Z", true) ; Checks if the third axis exists for the controller
+		, dpad := InStr(joy_info, "P", true) ; Checks if the POV buttons exist fot the controller
+		, previousJoyX := previousJoyY := ""
 	; Only create the variables if the axis exists for the controller
 	if (axis_3)
 		previousJoyZ := previousJoyR := ""
@@ -293,7 +304,7 @@ Start:
 	ih.KeyOpt("{LCtrl}{RCtrl}{LAlt}{RAlt}{LShift}{RShift}{LWin}{RWin}", "-N")
 	ih.OnKeyDown := Func("OnInput").Bind(keybdkey)
 	ih.Start()
-	return
+return
 ;***************************************************************************************************************************************************
 
 Stop: ; Turns off all timers and hotkeys, and stops the input hook
@@ -306,7 +317,7 @@ Stop: ; Turns off all timers and hotkeys, and stops the input hook
 		Hotkey, % JoystickNumber "Joy" A_Index, % funcobj, Off
 	}
 	ih.Stop()
-	return
+return
 ;***************************************************************************************************************************************************
 
 changeprofile:
@@ -317,7 +328,7 @@ changeprofile:
 	GuiControl,, savedkbd, % ChangeHkey(keybdkey := settings.Profiles[profile][1])
 	GuiControl,, savedctrlr, % ChangeHkey(controllerkey := settings.Profiles[profile][2])
 	Save()
-	return
+return
 ;******************************************************************| - HOTKEY SETTER - |******************************************************************
 
 ; Used to send unusal hotkeys, for example, F13-F24
@@ -328,26 +339,26 @@ HotkeySetter:
 	Gui, Font, s10
 	Gui, HkeySet:Add, Text, xm ym,
 	( LTrim
-	This is used to send unusual keys (e.g. F13-F24). 
-	It will temporarily remap the F1 key to whatever key you type in.
+		This is used to send unusual keys (e.g. F13-F24).
+		It will temporarily remap the F1 key to whatever key you type in.
 	)
 	Gui, HkeySet:Add, Edit, xp yp+40 w80 vOddHkey
 	Gui, HkeySet:Add, Button, xp+190 yp-2.5 wp-10 gSet, Set
 	Gui, HkeySet:Show, % "X" (x+(w/2) - 200) " Y" (y + (h/2) - 40) " W400 H80"
 	count := 0
-	return
+return
 
 Set:
 	count++
 	Gui, HkeySet:+OwnDialogs
 	MsgBox,, Hotkey Setter, The key you just entered will now be temporarily remapped to the F1 key
 	Hotkey, $F1, SendOddKey, On
-	return
+return
 
 SendOddKey:
 	Gui, HkeySet:Submit, NoHide
 	Send, {%OddHkey%}
-	return
+return
 
 HkeySetGuiClose:
 	Gui, HkeySet:+OwnDialogs
@@ -358,7 +369,7 @@ HkeySetGuiClose:
 	}
 	Gui, HkeySet:Destroy
 	WinActivate, ahk_id %MainHwnd%
-	return
+return
 ;***************************************************************************************************************************************************
 
 changectr:
@@ -374,7 +385,7 @@ changectr:
 	JoystickNumber := settings.JoyNums[newnum]
 	GuiControl, -AltSubmit, names
 	Save()
-	return
+return
 ;****************************************************************** - TIMERS - ******************************************************************
 
 check_mouse: ; The subroutine that checks mouse movement
@@ -383,27 +394,27 @@ check_mouse: ; The subroutine that checks mouse movement
 		if (cx > (sx+50) or cx < (sx-50) or cy > (sy+50) or cy < (sy-50)){
 			OnInput(keybdkey)
 			MouseGetPos, sx, sy
-		} 
+		}
 	}
-	return
+return
 ;***************************************************************************************************************************************************
 
 check_axes:
 	joyX := GetKeyState(JoystickNumber . "JoyX")
-	, joyY := GetKeyState(JoystickNumber . "JoyY")
+		, joyY := GetKeyState(JoystickNumber . "JoyY")
 	if !(IsValueSimilar(previousJoyX, joyX) && IsValueSimilar(previousJoyY, joyY)){
 		OnInput(controllerkey)
 		previousJoyX := joyX
-		, previousJoyY := joyY
+			, previousJoyY := joyY
 	}
 	; Only check the state if the axis exists
 	if (axis_3){
 		joyZ := GetKeyState(JoystickNumber . "JoyZ")
-		, joyR := GetKeyState(JoystickNumber . "JoyR")
+			, joyR := GetKeyState(JoystickNumber . "JoyR")
 		if !(IsValueSimilar(previousJoyR, joyR) && IsValueSimilar(previousJoyZ, joyZ)){
 			OnInput(controllerkey)
 			previousJoyZ := joyZ
-			, previousJoyR := joyR
+				, previousJoyR := joyR
 		}
 	}
 	; Only check POV state if it exists
@@ -412,7 +423,7 @@ check_axes:
 		if (joy_p != -1 && joy_p != "")
 			OnInput(controllerkey)
 	}
-	return
+return
 ;****************************************************************** - FUNCTIONS - ******************************************************************
 
 OnInput(key){
@@ -476,22 +487,22 @@ UpdateController(){
 	return
 
 	update:
-		GuiControl,, names, % "|" name
-		JoystickNumber := current[1]
-		for k, v in current {
-			settings.JoyNums[k] := v
-		}
-		GuiControl, Choose, names, 1
-		GuiControlGet, firstctrl,, names
-		settings.JoyName := firstctrl
-		return
+	GuiControl,, names, % "|" name
+	JoystickNumber := current[1]
+	for k, v in current {
+		settings.JoyNums[k] := v
+	}
+	GuiControl, Choose, names, 1
+	GuiControlGet, firstctrl,, names
+	settings.JoyName := firstctrl
+	return
 }
 ;***************************************************************************************************************************************************
 
 ChangeHkey(RawHkey){ ; Function that changes modifier symbols into literal text for display purposes in the main GUI window
 	static Modifiers := {"^": "Ctrl + ", "!": "Alt + ", "#": "Win + ", "+": "Shift + "}
 	ChangedHkey := ""
-	, LastKey := StrSplit(RawHkey, ["^", "!", "+", "#"]) ; Split the key by modifier to get the key without any modifiers
+		, LastKey := StrSplit(RawHkey, ["^", "!", "+", "#"]) ; Split the key by modifier to get the key without any modifiers
 
 	for symbol, modifier in Modifiers {
 		if (InStr(RawHkey, symbol))
@@ -534,10 +545,10 @@ Save(){
 	global settingsfile
 	settingsfile := FileOpen(A_ScriptDir "\settings.JSON" , "w")
 	if !(IsObject(settingsfile)){
-		MsgBox, 16, Savefile Replacer, 
+		MsgBox, 16, Savefile Replacer,
 		( LTrim
-		ERROR: Failed to load settings file! Please make sure it's in the correct directory.
-		You can use Shift+F4 to force close the program, but any changes you made will not be saved.
+			ERROR: Failed to load settings file! Please make sure it's in the correct directory.
+			You can use Shift+F4 to force close the program, but any changes you made will not be saved.
 		)
 		return
 	}
@@ -549,7 +560,7 @@ Save(){
 
 MainGuiClose:
 	Save()
-	ExitApp
+ExitApp
 
 ; Toggle start/stop
 !s::ToggleStart()
