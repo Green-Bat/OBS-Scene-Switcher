@@ -4,7 +4,7 @@
 *	OBS Scene Switcher
 *	By GreenBat
 *	Version:
-*		2.7.4 (Last updated 30/10/2023)
+*		2.7.5 (Last updated 03/06/2025)
 *		https://github.com/Green-Bat/OBS-Scene-Switcher
 *	Requirements:
 *		AutoHotkey v1.1.32.00+
@@ -13,7 +13,6 @@
 
 /*
 -[] Fix settings bug
--[x] Add version in UI
 */
 
 #NoEnv
@@ -28,11 +27,21 @@ if !(IsObject(settingsfile)){
 	MsgBox, 16, OBS Scene Switcher, ERROR: Failed to load settings file! Please make sure it's in the same directory as the program's exe file.
 	ExitApp
 }
-global settings := JSON.Load(settingsfile.Read())
-	, HasStarted := false, keybdkey := controllerkey := ""
-	, JoystickNumber := settings.JoyNum
+try {
+	global settings := JSON.Load(settingsfile.Read())
+} catch e {
+	MsgBox, 16, OBS Scene Switcher, % "ERROR: Failed to load, settings file may be corrupt. " e.Message
+	ExitApp
+}
+global HasStarted := false, keybdkey := controllerkey := ""
 	, VERSION = "2.7.5"
 settingsfile.Close()
+
+default_settings = {"JoyName": "", "JoyNums": [], "LastProfile": "", "Profiles": {}}
+for k,v in default_settings
+	if !settings.HasKey(k){
+		settings[k] := v
+	}
 
 GroupAdd, obs, OBS ahk_exe obs32.exe
 GroupAdd, obs, OBS ahk_exe obs64.exe
@@ -81,7 +90,7 @@ return
 	return
 #If
 
-;****************************************************************** - G-LABELS - ******************************************************************
+;*************************************************************************** - G-LABELS - ***************************************************************************
 
 ;******************************************************************| - PROFILE CREATION/DELETION - |******************************************************************
 
