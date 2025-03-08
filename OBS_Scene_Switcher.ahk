@@ -494,14 +494,6 @@ UpdateController(){
 	}
 	return
 
-	HasVal(arr, val){
-		for i, v in arr{
-			if (val == v)
-				return true
-		}
-		return false
-	}
-
 	update:
 	GuiControl,, names, % "|" name
 	if !(current.HasVal(current, JoystickNumber))
@@ -512,6 +504,14 @@ UpdateController(){
 	settings.JoyName := firstctrl
 	return
 }
+HasVal(arr, val){
+	for i, v in arr{
+		if (val == v)
+			return true
+	}
+	return false
+}
+
 ;***************************************************************************************************************************************************
 
 ChangeHkey(RawHkey){ ; Function that changes modifier symbols into literal text for display purposes in the main GUI window
