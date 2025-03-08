@@ -34,7 +34,7 @@ try {
 	ExitApp
 }
 global HasStarted := false, keybdkey := controllerkey := ""
-	, VERSION = "2.7.5"
+	, VERSION = "2.7.6"
 settingsfile.Close()
 
 default_settings = {"JoyName": "", "JoyNums": [], "LastProfile": "", "Profiles": {}}
