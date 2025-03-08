@@ -4,7 +4,7 @@
 *	OBS Scene Switcher
 *	By GreenBat
 *	Version:
-*		2.7.5 (Last updated 03/06/2025)
+*		2.7.6 (Last updated 08/03/2025)
 *		https://github.com/Green-Bat/OBS-Scene-Switcher
 *	Requirements:
 *		AutoHotkey v1.1.32.00+
