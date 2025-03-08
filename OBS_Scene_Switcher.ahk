@@ -24,13 +24,13 @@ SetWorkingDir, % A_ScriptDir
 
 settingsfile := FileOpen(A_ScriptDir "\settings.JSON" , "r")
 if !(IsObject(settingsfile)){
-	MsgBox, 16, OBS Scene Switcher, ERROR: Failed to load settings file! Please make sure it's in the same directory as the program's exe file.
+	MsgBox, 16, OBS Scene Switcher, % "ERROR: Failed to load settings file! Please make sure it's in the same directory as the program's exe file."
 	ExitApp
 }
 try {
 	global settings := JSON.Load(settingsfile.Read())
 } catch e {
-	MsgBox, 16, OBS Scene Switcher, % "ERROR: Failed to load, settings file may be corrupt. " e.Message
+	MsgBox, 16, OBS Scene Switcher, % "ERROR: Failed to load, settings file may be corrupt. `n" . e.Message
 	ExitApp
 }
 global HasStarted := false, keybdkey := controllerkey := ""
@@ -447,7 +447,7 @@ OnInput(key){
 CheckController(){ ; From the AHK documentation, used to auto-detect the joystick number
 	name := "", settings.JoyNums := []
 	Loop, 16 {
-		if (GetKeyState(A_Index . "JoyName")){
+		if (GetKeyState(A_Index . "JoyX") != ""){
 			name .= GetKeyState(A_Index . "JoyName") "|"
 			settings.JoyNums.Push(A_Index)
 		}
@@ -475,9 +475,8 @@ UpdateController(){
 	Gui, Main:Default
 	name := "", current := [] ; current controllers recognized by the pc itself not the ones in the list
 	Loop, 16 {
-		controller := GetKeyState(A_Index . "JoyName")
-		if (controller){
-			name .= controller "|"
+		if (GetKeyState(A_Index . "JoyX") != ""){
+			name .= GetKeyState(A_Index . "JoyName") "|"
 			current.Push(A_Index)
 		}
 	}
@@ -487,21 +486,28 @@ UpdateController(){
 		return
 	}
 
-	for k, v in settings.JoyNums {
-		if (v != current[k]){
+	for i, v in settings.JoyNums {
+		if (v != current[i]){
 			gosub, update
 			break
 		}
 	}
 	return
 
+	HasVal(arr, val){
+		for i, v in arr{
+			if (val == v)
+				return true
+		}
+		return false
+	}
+
 	update:
 	GuiControl,, names, % "|" name
-	JoystickNumber := current[1]
-	for k, v in current {
-		settings.JoyNums[k] := v
-	}
-	GuiControl, Choose, names, 1
+	if !(current.HasVal(current, JoystickNumber))
+		JoystickNumber := current[1]
+	settings.JoyNums := current
+	GuiControl, Choose, names, % JoystickNumber
 	GuiControlGet, firstctrl,, names
 	settings.JoyName := firstctrl
 	return
